@@ -1,18 +1,18 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-description = 'FRAME pallet template for defining custom runtime logic.'
+authors = ['Shin Takahashi']
+description = 'Faucet pallect for the basic token'
 edition = '2018'
-homepage = 'https://substrate.dev'
+homepage = ''
 license = 'Unlicense'
-name = 'pallet-template'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+name = 'faucet-pallet'
+repository = 'https://github.com/realtakahashi/faucet_pallet/tree/8387d75aeca08c4c3f2b47c9ce81f269eaeda948'
 version = '2.0.0'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
 # alias "parity-scale-code" to "codec"
-[dependencies.codec]
+[dependencies.parity-scale-codec]
 default-features = false
 features = ['derive']
 package = 'parity-scale-codec'
@@ -21,6 +21,9 @@ version = '1.3.4'
 [dependencies]
 frame-support = { default-features = false, version = '2.0.0' }
 frame-system = { default-features = false, version = '2.0.0' }
+sp-runtime = { version = '2.0.0', default-features = false }
+sp-core = { default-features = false, version = '2.0.0' }
+hex-literal = "0.3.1"
 
 [dev-dependencies]
 sp-core = { default-features = false, version = '2.0.0' }
@@ -30,7 +33,7 @@ sp-runtime = { default-features = false, version = '2.0.0' }
 [features]
 default = ['std']
 std = [
-    'codec/std',
+    'parity-scale-codec/std',
     'frame-support/std',
     'frame-system/std',
 ]
