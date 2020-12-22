@@ -18,7 +18,6 @@ use parity_scale_codec::{Decode, Encode};
 use hex_literal::hex;
 use sp_runtime::{AccountId32,
 	RuntimeDebug,
-	//generic,
 	transaction_validity::{
 		InvalidTransaction, TransactionSource, TransactionValidity,
 		ValidTransaction,
@@ -27,6 +26,8 @@ use sp_runtime::{AccountId32,
 
 pub const NUM_VEC_LEN: usize = 10;
 pub const UNSIGNED_TXS_PRIORITY: u64 = 100;
+pub const WAIT_BLOCK_NUMBER: u32 = 100;
+pub const TOKEN_AMOUNT: u32 = 100;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 pub struct Payload<Public> {
@@ -66,6 +67,8 @@ decl_storage! {
 		// Learn more about declaring storage items:
 		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
 		Something get(fn something): Option<u32>;
+		FaucetAddress get(fn faucet_address): Option<T::AccountId>;
+		Sendlist: map hasher(blake2_128_concat) T::AccountId => Option<<T as frame_system::Trait>::BlockNumber>;
 	}
 }
 
@@ -76,6 +79,8 @@ decl_event!(
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, AccountId),
+		SetFaucetAddress(AccountId),
+		SentSomeToken(AccountId),
 	}
 );
 
@@ -86,6 +91,9 @@ decl_error! {
 		NoneValue,
 		/// Errors should have helpful documentation associated with them.
 		StorageOverflow,
+		/// ->->-> 
+		TimeHasNotPassed,
+		NotSetFaucetAddress,
 	}
 }
 
@@ -100,41 +108,41 @@ decl_module! {
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
 
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
-		#[weight = 10_000 + T::DbWeight::get().writes(1)]
-		pub fn do_something(origin, something: u32) -> dispatch::DispatchResult {
-			// Check that the extrinsic was signed and get the signer.
-			// This function will return an error if the extrinsic is not signed.
-			// https://substrate.dev/docs/en/knowledgebase/runtime/origin
-			let who = ensure_signed(origin)?;
+		// todo: need Shounin
 
-			// Update storage.
-			Something::put(something);
-
-			// Emit an event.
-			Self::deposit_event(RawEvent::SomethingStored(something, who));
-			// Return a successful DispatchResult
+		#[weight = 10000]
+		pub fn set_faucet_address(origin) -> DispatchResult {
+			let caller = ensure_signed(origin)?;
+			<FaucetAddress<T>>::put(caller.clone());
+			Self::deposit_event(RawEvent::SetFaucetAddress(caller.clone()));
 			Ok(())
 		}
 
-		/// An example dispatchable that may throw a custom error.
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn cause_error(origin) -> dispatch::DispatchResult {
-			let _who = ensure_signed(origin)?;
-
-			// Read a value from storage.
-			match Something::get() {
-				// Return an error if the value has not been set.
-				None => Err(Error::<T>::NoneValue)?,
-				Some(old) => {
-					// Increment the value read from storage; will error in the event of overflow.
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-					// Update the value in storage with the incremented result.
-					Something::put(new);
-					Ok(())
+		#[weight = 10000]
+		pub fn get_some_token(origin, to_address: T::AccountId) -> DispatchResult {
+			let mut block_number;
+			match <Sendlist<T>>::get(to_address.clone()) {
+                Some(result) => {
+					block_number = result + WAIT_BLOCK_NUMBER.into();
+					if block_number > <frame_system::Module<T>>::block_number() {
+						return Err(Error::<T>::TimeHasNotPassed)?;
+					}
+					else{
+						block_number = <frame_system::Module<T>>::block_number();
+					}
 				},
-			}
+                None => block_number = <frame_system::Module<T>>::block_number(),
+			};
+			<Sendlist<T>>::insert(to_address.clone(), block_number);
+			let from_address = match <FaucetAddress<T>>::get(){
+				Some(result) => result,
+				None => return Err(Error::<T>::NotSetFaucetAddress)?,
+			};
+
+			let token_amoount : Balance<T> = TOKEN_AMOUNT.into();
+			T::Currency::transfer(&from_address, &to_address, token_amoount, ExistenceRequirement::KeepAlive);			
+			Self::deposit_event(RawEvent::SentSomeToken(to_address));
+			Ok(())
 		}
 
 		#[weight = 10000]
@@ -166,7 +174,8 @@ impl<T: Trait> frame_support::unsigned::ValidateUnsigned for Module<T> {
 			.build();
 
 		match call {
-			Call::submit_number_unsigned(_number,_to) => valid_tx(b"submit_number_unsigned".to_vec()),
+//			Call::submit_number_unsigned(_number,_to) => valid_tx(b"submit_number_unsigned".to_vec()),
+			Call::submit_number_unsigned(_number,_to) => valid_tx(b"get_some_token".to_vec()),
 			// Call::submit_number_unsigned_with_signed_payload(ref payload, ref signature) => {
 			// 	if !SignedPayload::<T>::verify::<T::AuthorityId>(payload, signature.clone()) {
 			// 		return InvalidTransaction::BadProof.into();
