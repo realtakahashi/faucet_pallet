@@ -4,15 +4,17 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get,
+use frame_support::{decl_module, decl_storage, decl_event, decl_error, 
 	traits::Currency,
 	traits::ExistenceRequirement,
 	dispatch::DispatchResult,
+	debug,
 };
 
 use frame_system::{
-	self as system, ensure_none, ensure_signed,
+	self as system, 
 	offchain::{SignedPayload,SigningTypes},
+	ensure_none,
 };
 use parity_scale_codec::{Decode, Encode};
 use hex_literal::hex;
@@ -23,11 +25,17 @@ use sp_runtime::{AccountId32,
 		ValidTransaction,
 	},
 };
+use sp_runtime::SaturatedConversion;
 
 pub const NUM_VEC_LEN: usize = 10;
 pub const UNSIGNED_TXS_PRIORITY: u64 = 100;
-pub const WAIT_BLOCK_NUMBER: u32 = 100;
-pub const TOKEN_AMOUNT: u32 = 100;
+// own settings of your network.
+// How many block numbers do you wait to allow remittances from fauce?
+pub const WAIT_BLOCK_NUMBER: u32 = 100; 
+// How much token do you transfer at onece? this mean 100 unit token
+pub const TOKEN_AMOUNT: u64 = 100000000000000000; 
+// Default faucet address
+pub const ACCOUNT_ID_HEX: [u8; 32] = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 pub struct Payload<Public> {
@@ -79,6 +87,7 @@ decl_event!(
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, AccountId),
+		/// ->->-> 
 		SetFaucetAddress(AccountId),
 		SentSomeToken(AccountId),
 	}
@@ -94,6 +103,8 @@ decl_error! {
 		/// ->->-> 
 		TimeHasNotPassed,
 		NotSetFaucetAddress,
+		TransferError,
+		TooManyTokenAmount,
 	}
 }
 
@@ -108,15 +119,13 @@ decl_module! {
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
 
-		// todo: need Shounin
-
-		#[weight = 10000]
-		pub fn set_faucet_address(origin) -> DispatchResult {
-			let caller = ensure_signed(origin)?;
-			<FaucetAddress<T>>::put(caller.clone());
-			Self::deposit_event(RawEvent::SetFaucetAddress(caller.clone()));
-			Ok(())
-		}
+		// #[weight = 10000]
+		// pub fn set_faucet_address(origin) -> DispatchResult {
+		// 	let caller = ensure_signed(origin)?;
+		// 	<FaucetAddress<T>>::put(caller.clone());
+		// 	Self::deposit_event(RawEvent::SetFaucetAddress(caller.clone()));
+		// 	Ok(())
+		// }
 
 		#[weight = 10000]
 		pub fn get_some_token(origin, to_address: T::AccountId) -> DispatchResult {
@@ -133,32 +142,21 @@ decl_module! {
 				},
                 None => block_number = <frame_system::Module<T>>::block_number(),
 			};
-			<Sendlist<T>>::insert(to_address.clone(), block_number);
-			let from_address = match <FaucetAddress<T>>::get(){
-				Some(result) => result,
-				None => return Err(Error::<T>::NotSetFaucetAddress)?,
-			};
 
-			let token_amoount : Balance<T> = TOKEN_AMOUNT.into();
-			T::Currency::transfer(&from_address, &to_address, token_amoount, ExistenceRequirement::KeepAlive);			
-			Self::deposit_event(RawEvent::SentSomeToken(to_address));
-			Ok(())
-		}
-
-		#[weight = 10000]
-		pub fn submit_number_unsigned(origin, number: Balance<T>, to: T::AccountId) -> DispatchResult {
-			let _ = ensure_none(origin)?;
-			//debug::info!("submit_number_unsigned: {}", number);
-			//Self::append_or_replace_number(number);
-			//Numbers::put(number);
-			let account32: AccountId32 = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"].into();
+			let account32: AccountId32 = ACCOUNT_ID_HEX.into();
 			let mut from32 = AccountId32::as_ref(&account32);
-			let from : T::AccountId = T::AccountId::decode(&mut from32).unwrap_or_default();
-			T::Currency::transfer(&from,&to,number,ExistenceRequirement::KeepAlive);
-			//Self::deposit_event(RawEvent::NewNumber(None, number));
+			let from_address : T::AccountId = T::AccountId::decode(&mut from32).unwrap_or_default();
+
+			let token_amoount : Balance<T> = TOKEN_AMOUNT.saturated_into();
+			debug::info!("$$$$$$$$$$$$$$$$$$$ token_amoount: {:?}", token_amoount);
+
+			if T::Currency::transfer(&from_address, &to_address, token_amoount, ExistenceRequirement::KeepAlive) != Ok(()) {
+				return Err(Error::<T>::TransferError)?;
+			}			
+			Self::deposit_event(RawEvent::SentSomeToken(to_address.clone()));
+			<Sendlist<T>>::insert(to_address.clone(), block_number);
 			Ok(())
 		}
-
 	}
 }
 
@@ -174,8 +172,7 @@ impl<T: Trait> frame_support::unsigned::ValidateUnsigned for Module<T> {
 			.build();
 
 		match call {
-//			Call::submit_number_unsigned(_number,_to) => valid_tx(b"submit_number_unsigned".to_vec()),
-			Call::submit_number_unsigned(_number,_to) => valid_tx(b"get_some_token".to_vec()),
+			Call::get_some_token(_to_address) => valid_tx(b"get_some_token".to_vec()),
 			// Call::submit_number_unsigned_with_signed_payload(ref payload, ref signature) => {
 			// 	if !SignedPayload::<T>::verify::<T::AuthorityId>(payload, signature.clone()) {
 			// 		return InvalidTransaction::BadProof.into();
