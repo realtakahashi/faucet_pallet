@@ -1,22 +1,21 @@
 # Substrate Pallet Template
 
-This is a template for a Substrate pallet which lives as its own crate so it can be imported into multiple runtimes. It is based on the ["template" pallet](https://github.com/paritytech/substrate/tree/master/bin/node-template/pallets/template) that is included with the [Substrate node template](https://github.com/paritytech/substrate/tree/master/bin/node-template).
-
-Check out the [HOWTO](HOWTO.md) to learn how to use this for your own runtime module.
-
-This README should act as a general template for distributing your pallet to others.
+This is a faucet pallet for sending tokens.
+It has the following functions.
+-You can execute a remittance transaction to the address specified as an unsigned transaction.
+-The token remittance source can be defined as a constant of the program.
+-You can define the quantity to be remitted at one time as a constant of the program.
+-You can define as a program constant how long you want to stop sending money after sending it once.
 
 ## Purpose
 
-This pallet acts as a template for building other pallets.
-
-It currently allows a user to put a `u32` value into storage, which triggers a runtime event.
+This pallet acts as a faucet.
 
 ## Dependencies
 
 ### Traits
 
-This pallet does not depend on any externally defined traits.
+This pallet  depend on "frame_support::unsigned::ValidateUnsigned".
 
 ### Pallets
 
@@ -31,16 +30,7 @@ To add this pallet to your runtime, simply include the following to your runtime
 ```TOML
 [dependencies.substrate-pallet-template]
 default_features = false
-git = 'https://github.com/substrate-developer-hub/substrate-pallet-template.git'
-```
-
-and update your runtime's `std` feature to include this pallet:
-
-```TOML
-std = [
-    # --snip--
-    'example_pallet/std',
-]
+git = 'https://github.com/realtakahashi/faucet_pallet.git'
 ```
 
 ### Runtime `lib.rs`
@@ -48,28 +38,27 @@ std = [
 You should implement it's trait like so:
 
 ```rust
-/// Used for test_module
-impl example_pallet::Trait for Runtime {
+impl faucet_pallet::Trait for Runtime {
 	type Event = Event;
+	type Currency = Balances;
 }
 ```
 
 and include it in your `construct_runtime!` macro:
 
 ```rust
-ExamplePallet: substrate_pallet_template::{Module, Call, Storage, Event<T>},
+FaucetPallet: faucet_pallet::{Module, Call, Storage, Event<T>,ValidateUnsigned},
 ```
 
 ### Genesis Configuration
 
-This template pallet does not have any genesis configuration.
+You need to set the following constants:
 
-## Reference Docs
-
-You can view the reference docs for this pallet by running:
-
+```rust
+// How many block numbers do you wait to allow remittances from fauce?
+pub const WAIT_BLOCK_NUMBER: u32 = 100; 
+// How much token do you transfer at onece? this mean 100 unit token
+pub const TOKEN_AMOUNT: u64 = 100000000000000000; 
+// Default faucet address
+pub const ACCOUNT_ID_HEX: [u8; 32] = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
 ```
-cargo doc --open
-```
-
-or by visiting this site: <Add Your Link>

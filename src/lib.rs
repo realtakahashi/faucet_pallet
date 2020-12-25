@@ -14,7 +14,6 @@ use frame_support::{decl_module, decl_storage, decl_event, decl_error,
 use frame_system::{
 	self as system, 
 	offchain::{SignedPayload,SigningTypes},
-	ensure_none,
 };
 use parity_scale_codec::{Decode, Encode};
 use hex_literal::hex;
@@ -72,10 +71,6 @@ decl_storage! {
 	// This name may be updated, but each pallet in the runtime must use a unique name.
 	// ---------------------------------vvvvvvvvvvvvvv
 	trait Store for Module<T: Trait> as TemplateModule {
-		// Learn more about declaring storage items:
-		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
-		Something get(fn something): Option<u32>;
-		FaucetAddress get(fn faucet_address): Option<T::AccountId>;
 		Sendlist: map hasher(blake2_128_concat) T::AccountId => Option<<T as frame_system::Trait>::BlockNumber>;
 	}
 }
@@ -84,9 +79,6 @@ decl_storage! {
 // https://substrate.dev/docs/en/knowledgebase/runtime/events
 decl_event!(
 	pub enum Event<T> where AccountId = <T as frame_system::Trait>::AccountId {
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		SomethingStored(u32, AccountId),
 		/// ->->-> 
 		SetFaucetAddress(AccountId),
 		SentSomeToken(AccountId),
@@ -96,10 +88,6 @@ decl_event!(
 // Errors inform users that something went wrong.
 decl_error! {
 	pub enum Error for Module<T: Trait> {
-		/// Error names should be descriptive.
-		NoneValue,
-		/// Errors should have helpful documentation associated with them.
-		StorageOverflow,
 		/// ->->-> 
 		TimeHasNotPassed,
 		NotSetFaucetAddress,
@@ -118,14 +106,6 @@ decl_module! {
 
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
-
-		// #[weight = 10000]
-		// pub fn set_faucet_address(origin) -> DispatchResult {
-		// 	let caller = ensure_signed(origin)?;
-		// 	<FaucetAddress<T>>::put(caller.clone());
-		// 	Self::deposit_event(RawEvent::SetFaucetAddress(caller.clone()));
-		// 	Ok(())
-		// }
 
 		#[weight = 10000]
 		pub fn get_some_token(origin, to_address: T::AccountId) -> DispatchResult {
@@ -173,12 +153,6 @@ impl<T: Trait> frame_support::unsigned::ValidateUnsigned for Module<T> {
 
 		match call {
 			Call::get_some_token(_to_address) => valid_tx(b"get_some_token".to_vec()),
-			// Call::submit_number_unsigned_with_signed_payload(ref payload, ref signature) => {
-			// 	if !SignedPayload::<T>::verify::<T::AuthorityId>(payload, signature.clone()) {
-			// 		return InvalidTransaction::BadProof.into();
-			// 	}
-			// 	valid_tx(b"submit_number_unsigned_with_signed_payload".to_vec())
-			// },
 			_ => InvalidTransaction::Call.into(),
 		}
 	}
