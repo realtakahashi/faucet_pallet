@@ -1,4 +1,4 @@
-# Substrate Pallet Template
+# Faucet Pallet
 
 This is a faucet pallet for sending tokens.
 It has the following functions.
