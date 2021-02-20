@@ -1,5 +1,29 @@
-// use crate::{Error, mock::*};
-// use frame_support::{assert_ok, assert_noop};
+use crate::{Error, mock::*};
+use frame_support::{assert_ok , assert_noop};
+
+#[test]
+fn it_works() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(TemplateModule::get_some_token(Origin::signed(1), BOB));
+    });
+}
+
+#[test]
+fn send_to_other_address(){
+    new_test_ext().execute_with(|| {
+        TemplateModule::get_some_token(Origin::signed(1), BOB);
+        assert_ok!(TemplateModule::get_some_token(Origin::signed(1), CHARLIE));
+    });
+}
+
+#[test]
+fn blocktime_error(){
+    new_test_ext().execute_with(|| {
+        TemplateModule::get_some_token(Origin::signed(1), BOB);
+        assert_noop!(TemplateModule::get_some_token(Origin::signed(1), BOB),
+        Error::<Test>::TimeHasNotPassed);
+    });
+}
 
 // #[test]
 // fn it_works_for_default_value() {
