@@ -30,7 +30,7 @@ pub const NUM_VEC_LEN: usize = 10;
 pub const UNSIGNED_TXS_PRIORITY: u64 = 100;
 // own settings of your network.
 // How many block numbers do you wait to allow remittances from fauce?
-pub const WAIT_BLOCK_NUMBER: u32 = 100; 
+pub const WAIT_BLOCK_NUMBER: u32 = 2000; 
 // How much token do you transfer at onece? this mean 100 unit token
 pub const TOKEN_AMOUNT: u64 = 100000000000000000; 
 // Default faucet address
