@@ -121,7 +121,7 @@ decl_storage! {
 		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
 		// Something get(fn something): Option<u32>;
 		LatestFaucetData get(fn latest_faucet_data): Option<FaucetData>;
-		Sendlist: map hasher(blake2_128_concat) T::AccountId => Option<<T as frame_system::Config>::BlockNumber>;
+		Sendlist get(fn send_list): map hasher(blake2_128_concat) T::AccountId => Option<<T as frame_system::Config>::BlockNumber>;
 	}
 }
 

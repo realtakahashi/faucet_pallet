@@ -1,47 +1,26 @@
-use crate::{Error, mock::*};
-use frame_support::{assert_ok , assert_noop};
+use crate::{mock::*};
+use frame_support::{assert_ok};
+use crate as faucet_pallet;
+use frame_system as system;
 
 #[test]
-fn it_works() {
-    new_test_ext().execute_with(|| {
-        assert_ok!(TemplateModule::get_some_token(Origin::signed(1), BOB));
-    });
+fn send_some_testnet_token_works() {
+	new_test_ext().execute_with(|| {
+		let param = faucet_pallet::FaucetData {
+			id: 11,
+			login: b"test".to_vec(),
+			created_at: b"1976-09-24T16:00:00Z".to_vec(),
+			address: b"306721211d5404bd9da88e0204360a1a9ab8b87c66c1bc2fcdd37f3c2222cc20".to_vec(),
+		};
+		let mut params = Vec::<_>::new();
+		params.push(param.clone());
+		let acct: <Test as system::Config>::AccountId = Default::default();
+		assert_ok!(FaucetPallet::send_some_testnet_token(
+			Origin::signed(acct),
+			params
+		));
+		assert_eq!(FaucetPallet::latest_faucet_data(), Some(param));
+		let block_number = FaucetPallet::send_list(acct);
+		assert_eq!(block_number!=Some(0), true);
+	});
 }
-
-#[test]
-fn send_to_other_address(){
-    new_test_ext().execute_with(|| {
-        TemplateModule::get_some_token(Origin::signed(1), BOB);
-        assert_ok!(TemplateModule::get_some_token(Origin::signed(1), CHARLIE));
-    });
-}
-
-#[test]
-fn blocktime_error(){
-    new_test_ext().execute_with(|| {
-        TemplateModule::get_some_token(Origin::signed(1), BOB);
-        assert_noop!(TemplateModule::get_some_token(Origin::signed(1), BOB),
-        Error::<Test>::TimeHasNotPassed);
-    });
-}
-
-// #[test]
-// fn it_works_for_default_value() {
-// 	new_test_ext().execute_with(|| {
-// 		// Dispatch a signed extrinsic.
-// 		assert_ok!(TemplateModule::do_something(Origin::signed(1), 42));
-// 		// Read pallet storage and assert an expected result.
-// 		assert_eq!(TemplateModule::something(), Some(42));
-// 	});
-// }
-
-// #[test]
-// fn correct_error_for_none_value() {
-// 	new_test_ext().execute_with(|| {
-// 		// Ensure the expected error is thrown when no value is present.
-// 		assert_noop!(
-// 			TemplateModule::cause_error(Origin::signed(1)),
-// 			Error::<Test>::NoneValue
-// 		);
-// 	});
-// }
