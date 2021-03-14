@@ -1,11 +1,19 @@
 # Faucet Pallet
 
 This is a faucet pallet for sending tokens.
-It has the following functions.
--You can execute a remittance transaction to the address specified as an unsigned transaction.
--The token remittance source can be defined as a constant of the program.
--You can define the quantity to be remitted at one time as a constant of the program.
--You can define as a program constant how long you want to stop sending money after sending it once.
+The usage is as follows.
+
+- You can apply for this Faucet by entering the "user name", "address", and "account ID derived from the address" in a specific Github Issue.
+- This pallet uses an off-chain worker to get this Github Issue at regular intervals.
+- Check the format of the address on Off-Chain and check if the AccountId set by the user is correct.
+- Also check on the Off-chain that the same address has not been requested multiple times within a certain period of time.
+- Set each program const value in lib.rs.
+  - FAUCET_CHECK_INTERVAL: Definition of the interval at which data is retrieved from the Github Issue site used as a faucet front end.
+  - TOKEN_AMOUNT:Amount of test net token to send at once.
+  - KEY_TYPE:KeyType definition.
+  - WAIT_BLOCK_NUMBER:Specify the block number as the interval until the account that received the test net token can receive it again.
+  - HTTP_HEADER_USER_AGENT:Specify any character string.
+  - HTTP_REMOTE_REQUEST:URL of Github Issue to use as front end.
 
 ## Purpose
 
@@ -15,7 +23,7 @@ This pallet acts as a faucet.
 
 ### Traits
 
-This pallet  depend on "frame_support::unsigned::ValidateUnsigned".
+This pallet does not depend on any externally defined traits.
 
 ### Pallets
 
@@ -38,7 +46,9 @@ git = 'https://github.com/realtakahashi/faucet_pallet.git'
 You should implement it's trait like so:
 
 ```rust
-impl faucet_pallet::Trait for Runtime {
+impl faucet_pallet::Config for Runtime {
+	type AuthorityId = faucet_pallet::crypto::TestAuthId;
+	type Call = Call;
 	type Event = Event;
 	type Currency = Balances;
 }
@@ -47,7 +57,7 @@ impl faucet_pallet::Trait for Runtime {
 and include it in your `construct_runtime!` macro:
 
 ```rust
-FaucetPallet: faucet_pallet::{Module, Call, Storage, Event<T>,ValidateUnsigned},
+Faucet: faucet_pallet::{Module, Call, Storage, Event<T>},
 ```
 
 ### Genesis Configuration
@@ -55,10 +65,17 @@ FaucetPallet: faucet_pallet::{Module, Call, Storage, Event<T>,ValidateUnsigned},
 You need to set the following constants:
 
 ```rust
-// How many block numbers do you wait to allow remittances from fauce?
-pub const WAIT_BLOCK_NUMBER: u32 = 100; 
-// How much token do you transfer at onece? this mean 100 unit token
-pub const TOKEN_AMOUNT: u64 = 100000000000000000; 
-// Default faucet address
-pub const ACCOUNT_ID_HEX: [u8; 32] = hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"];
+// genesis settings.
+// Definition of the interval at which data is retrieved from the Github Issue site used as a faucet front end.
+const FAUCET_CHECK_INTERVAL: u64 = 60000;
+// Amount of test net token to send at once.
+pub const TOKEN_AMOUNT: u64 = 1000000000000000;
+// KeyType definition. 
+pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"shin");
+// Specify the block number as the interval until the account that received the test net token can receive.
+pub const WAIT_BLOCK_NUMBER: u32 = 1000; 
+// HTTP_USER_AGENT string.
+const HTTP_HEADER_USER_AGENT: &str = "realtakahashi";
+// URL of Github Issue to use as front end.
+const HTTP_REMOTE_REQUEST: &str = "https://api.github.com/repos/realtakahashi/faucet_pallet/issues/2/comments";
 ```

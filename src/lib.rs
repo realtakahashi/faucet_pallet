@@ -42,11 +42,17 @@ use rustc_hex::FromHex;
 use sp_runtime::SaturatedConversion;
 
 // genesis settings.
+// Definition of the interval at which data is retrieved from the Github Issue site used as a faucet front end.
 const FAUCET_CHECK_INTERVAL: u64 = 60000;
-pub const TOKEN_AMOUNT: u64 = 1000000000000000; 
+// Amount of test net token to send at once.
+pub const TOKEN_AMOUNT: u64 = 1000000000000000;
+// KeyType definition. 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"shin");
-pub const WAIT_BLOCK_NUMBER: u32 = 20; //2000
+// Specify the block number as the interval until the account that received the test net token can receive.
+pub const WAIT_BLOCK_NUMBER: u32 = 1000; 
+// HTTP_USER_AGENT string.
 const HTTP_HEADER_USER_AGENT: &str = "realtakahashi";
+// URL of Github Issue to use as front end.
 const HTTP_REMOTE_REQUEST: &str = "https://api.github.com/repos/realtakahashi/faucet_pallet/issues/2/comments";
 
 pub mod crypto {
