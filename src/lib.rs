@@ -359,7 +359,7 @@ impl<T: Config> Module<T> {
 					for key_value_str in body_value{
 						let key_value: Vec<&str> = key_value_str.split(':').collect();
 						if key_value.len() != 2{
-							// debug::warn!("##### This is not key_value string: {:#?}", key_value);
+							debug::warn!("##### This is not key_value string: {:#?}", key_value);
 							continue;
 						}
 						if key_value_str.find("address") >= Some(0){
@@ -373,14 +373,14 @@ impl<T: Config> Module<T> {
 					match bs58::decode(address_str).into(&mut output){
 						Ok(_res)=> (), // debug::warn!("##### bs58.decode is succeed."),
 						Err(_e)=> {
-							// debug::warn!("##### This is invalid address : {:#?} : {:#?}", address_str, e);
+							debug::warn!("##### This is invalid address : {:#?} : {:#?}", address_str, _e);
 							continue;
 						},
 					};
 					let cut_address_vec:Vec<_> = output.drain(1..33).collect();
 					let homework_vec:Vec<_> = homework_str.from_hex().unwrap();
 					if cut_address_vec != homework_vec {
-						// debug::warn!("##### This is invalid address or invalid homework: {:#?}", homework_str);
+						debug::warn!("##### This is invalid address or invalid homework: {:#?}", homework_str);
 						continue;
 					}
 					let to_address_vec:Vec<u8> = homework_str.from_hex().unwrap();
@@ -439,6 +439,7 @@ impl<T: Config> Module<T> {
 
 		if let Some((_acc, res)) = result {
 			if res.is_err() {
+				debug::error!("Execute transaction is failed.AccountId is {:#?}",_acc.id);
 				return Err(<Error<T>>::OffchainSignedTxError);
 			}
 			return Ok(());
